@@ -24,12 +24,12 @@ let package = Package(
         name: "Beethoven",
         dependencies: [
             "Pitchy",
-        ],
-        path: "Source"
+        ]
     ),
     .testTarget(
       name: "BeethovenTests",
       dependencies: [
+        "Beethoven",
         "Pitchy",
       ]
     )
