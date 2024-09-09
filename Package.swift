@@ -17,6 +17,14 @@ let package = Package(
     .package(
         url: "https://github.com/cs-0/Pitchy.git",
         branch: "master"
+    ),
+    .package(
+        url: "https://github.com/Quick/Quick",
+        from: "7.6.0"
+    ),
+    .package(
+        url: "https://github.com/Quick/Nimble",
+        from: "13.0.0"
     )
   ],
   targets: [
@@ -31,6 +39,8 @@ let package = Package(
       dependencies: [
         "Beethoven",
         "Pitchy",
+        "Nimble",
+        "Quick"
       ]
     )
   ]
