@@ -3,12 +3,12 @@ import Quick
 import Nimble
 
 final class ConfigSpec: QuickSpec {
-  override func spec() {
-    describe("Config") {
+  func spec() {
+    Self.describe("Config") {
       var config: Config!
 
-      describe("#init") {
-        it("sets default values") {
+      Self.describe("#init") {
+        Self.it("sets default values") {
           config = Config()
 
           expect(config.bufferSize).to(equal(4096))
