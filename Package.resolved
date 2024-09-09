@@ -1,5 +1,5 @@
 {
-  "originHash" : "491f1be30d390ac7deac833f94e2c2c06bf8494bf75593bd0171374a50bc7496",
+  "originHash" : "e4edde0bc1833c1aaa0f02dd1e26f14d97e3121bcf17d5065db15cfb63240c06",
   "pins" : [
     {
       "identity" : "cwlcatchexception",
@@ -34,7 +34,7 @@
       "location" : "https://github.com/cs-0/Pitchy.git",
       "state" : {
         "branch" : "master",
-        "revision" : "432a838fa34a4f7cd638f7e72609f182ce963b60"
+        "revision" : "5d637f2a663aa3477f9be85970ba15c2e0c2559b"
       }
     },
     {
