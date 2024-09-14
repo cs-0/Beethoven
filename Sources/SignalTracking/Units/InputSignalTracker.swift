@@ -78,7 +78,9 @@ final class InputSignalTracker: SignalTracker {
     }
 
     try audioEngine?.start()
-    captureSession.startRunning()
+    DispatchQueue.global(qos: .userInitiated).async {
+      self.captureSession.startRunning()
+    }
     guard captureSession.isRunning == true else {
         throw InputSignalTrackerError.inputNodeMissing
     }
