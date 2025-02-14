@@ -4,6 +4,70 @@ public enum InputSignalTrackerError: Error {
   case inputNodeMissing
 }
 
+#if os(watchOS)
+final class AWInputSignalTracker: SignalTracker {
+  weak var delegate: SignalTrackerDelegate?
+  var levelThreshold: Float?
+  
+  private var audioEngine: AVAudioEngine?
+  // 44.1 kHz
+  private let sampleRate: Double = 44100
+  private let bufferSize: AVAudioFrameCount
+  private let bus = 0
+  
+  var mode: SignalTrackerMode {
+    return .record
+  }
+  
+  var peakLevel: Float?
+  
+  var averageLevel: Float?
+  
+  init(bufferSize: AVAudioFrameCount = 2048,
+       delegate: SignalTrackerDelegate? = nil) {
+    self.bufferSize = bufferSize
+    self.delegate = delegate
+  }
+  
+  func start() throws {
+    self.audioEngine = AVAudioEngine()
+    guard let inputNode = self.audioEngine?.inputNode else {
+      throw InputSignalTrackerError.inputNodeMissing
+    }
+    
+    let format = inputNode.outputFormat(forBus: self.bus)
+    
+    inputNode.installTap(onBus: self.bus, bufferSize: self.bufferSize, format: format) { buffer, time in
+      guard let averageLevel = self.averageLevel else { return }
+      
+      let levelThreshold = self.levelThreshold ?? -1000000.0
+      
+      if averageLevel > levelThreshold {
+        DispatchQueue.main.async {
+          self.delegate?.signalTracker(self, didReceiveBuffer: buffer, atTime: time)
+        }
+      } else {
+        DispatchQueue.main.async {
+          self.delegate?.signalTrackerWentBelowLevelThreshold(self)
+        }
+      }
+    }
+    try audioEngine?.start()
+  }
+  
+  func stop() {
+    guard audioEngine != nil else {
+      return
+    }
+    audioEngine?.stop()
+    audioEngine?.reset()
+    audioEngine = nil
+  }
+  
+  
+}
+
+#else
 final class InputSignalTracker: SignalTracker {
   weak var delegate: SignalTrackerDelegate?
   var levelThreshold: Float?
@@ -112,3 +176,5 @@ final class InputSignalTracker: SignalTracker {
     } catch {}
   }
 }
+
+#endif // os(watchOS)

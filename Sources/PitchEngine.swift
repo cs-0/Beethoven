@@ -54,7 +54,11 @@ public final class PitchEngine {
       if let audioUrl = config.audioUrl {
         self.signalTracker = OutputSignalTracker(audioUrl: audioUrl, bufferSize: bufferSize)
       } else {
+        #if os(watchOS)
+        self.signalTracker = AWInputSignalTracker(bufferSize: bufferSize)
+        #else
         self.signalTracker = InputSignalTracker(bufferSize: bufferSize)
+        #endif
       }
     }
 
@@ -77,6 +81,7 @@ public final class PitchEngine {
     case AVAudioSession.RecordPermission.granted:
       activate()
     case AVAudioSession.RecordPermission.denied:
+      #if !os(watchOS)
       DispatchQueue.main.async {
         if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
             if #available(iOS 10.0, *) {
@@ -86,6 +91,7 @@ public final class PitchEngine {
             }
         }
       }
+      #endif // os(watchOS)
     case AVAudioSession.RecordPermission.undetermined:
       AVAudioSession.sharedInstance().requestRecordPermission { [weak self] granted  in
         guard let weakSelf = self else { return }
