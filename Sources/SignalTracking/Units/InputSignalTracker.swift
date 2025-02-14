@@ -1,4 +1,5 @@
 import AVFoundation
+import Accelerate
 
 public enum InputSignalTrackerError: Error {
   case inputNodeMissing
@@ -38,17 +39,21 @@ final class AWInputSignalTracker: SignalTracker {
     let format = inputNode.outputFormat(forBus: self.bus)
     
     inputNode.installTap(onBus: self.bus, bufferSize: self.bufferSize, format: format) { buffer, time in
-      guard let averageLevel = self.averageLevel else { return }
-      
-      let levelThreshold = self.levelThreshold ?? -1000000.0
-      
-      if averageLevel > levelThreshold {
+      // calculate the root mean square of the channels to determine the volume
+      guard let channelData = buffer.floatChannelData else { return }
+      let frames = UInt(buffer.frameLength)
+      var rms: Float = 0
+      vDSP_measqv(channelData[0], 1, &rms, frames)
+      rms = sqrt(rms)
+      var db: Float = if rms > 0 {
+        20 * log10(rms)
+      } else {
+        0
+      }
+      let normalizedLevel = max(0, (db + 50) / 50)
+      if normalizedLevel > 0 {
         DispatchQueue.main.async {
           self.delegate?.signalTracker(self, didReceiveBuffer: buffer, atTime: time)
-        }
-      } else {
-        DispatchQueue.main.async {
-          self.delegate?.signalTrackerWentBelowLevelThreshold(self)
         }
       }
     }
