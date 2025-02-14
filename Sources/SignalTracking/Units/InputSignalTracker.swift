@@ -1,9 +1,78 @@
 import AVFoundation
+import Accelerate
 
 public enum InputSignalTrackerError: Error {
   case inputNodeMissing
 }
 
+#if os(watchOS)
+final class AWInputSignalTracker: SignalTracker {
+  weak var delegate: SignalTrackerDelegate?
+  var levelThreshold: Float?
+  
+  private var audioEngine: AVAudioEngine?
+  // 44.1 kHz
+  private let sampleRate: Double = 44100
+  private let bufferSize: AVAudioFrameCount
+  private let bus = 0
+  
+  var mode: SignalTrackerMode {
+    return .record
+  }
+  
+  var peakLevel: Float?
+  
+  var averageLevel: Float?
+  
+  init(bufferSize: AVAudioFrameCount = 2048,
+       delegate: SignalTrackerDelegate? = nil) {
+    self.bufferSize = bufferSize
+    self.delegate = delegate
+  }
+  
+  func start() throws {
+    self.audioEngine = AVAudioEngine()
+    guard let inputNode = self.audioEngine?.inputNode else {
+      throw InputSignalTrackerError.inputNodeMissing
+    }
+    
+    let format = inputNode.outputFormat(forBus: self.bus)
+    
+    inputNode.installTap(onBus: self.bus, bufferSize: self.bufferSize, format: format) { buffer, time in
+      // calculate the root mean square of the channels to determine the volume
+      guard let channelData = buffer.floatChannelData else { return }
+      let frames = UInt(buffer.frameLength)
+      var rms: Float = 0
+      vDSP_measqv(channelData[0], 1, &rms, frames)
+      rms = sqrt(rms)
+      var db: Float = if rms > 0 {
+        20 * log10(rms)
+      } else {
+        0
+      }
+      let normalizedLevel = max(0, (db + 50) / 50)
+      if normalizedLevel > 0 {
+        DispatchQueue.main.async {
+          self.delegate?.signalTracker(self, didReceiveBuffer: buffer, atTime: time)
+        }
+      }
+    }
+    try audioEngine?.start()
+  }
+  
+  func stop() {
+    guard audioEngine != nil else {
+      return
+    }
+    audioEngine?.stop()
+    audioEngine?.reset()
+    audioEngine = nil
+  }
+  
+  
+}
+
+#else
 final class InputSignalTracker: SignalTracker {
   weak var delegate: SignalTrackerDelegate?
   var levelThreshold: Float?
@@ -112,3 +181,5 @@ final class InputSignalTracker: SignalTracker {
     } catch {}
   }
 }
+
+#endif // os(watchOS)
