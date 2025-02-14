@@ -1,6 +1,9 @@
 import UIKit
 import AVFoundation
 import Pitchy
+#if os(watchOS)
+import WatchKit
+#endif
 
 public protocol PitchEngineDelegate: AnyObject {
   func pitchEngine(_ pitchEngine: PitchEngine, didReceivePitch pitch: Pitch)
@@ -81,7 +84,15 @@ public final class PitchEngine {
     case AVAudioSession.RecordPermission.granted:
       activate()
     case AVAudioSession.RecordPermission.denied:
-      #if !os(watchOS)
+      #if os(watchOS)
+      let alertTitle = "Microphone Access Denied"
+      let alertMessage = "Please enable microphone access for this app on your iPhone: Settings > Privacy & Security > Microphone."
+      let action = WKAlertAction(title: "OK", style: .default) {
+        print("User acknowledged the alert.")
+      }
+      WKInterfaceController().presentAlert(withTitle: alertTitle, message: alertMessage, preferredStyle: .alert, actions: [action])
+
+      #else
       DispatchQueue.main.async {
         if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
             if #available(iOS 10.0, *) {
